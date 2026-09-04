@@ -349,6 +349,24 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="videoModal" style="display:none;">
+  <div class="modal-card" style="max-width:1100px;width:96%;padding:18px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;">
+      <div>
+        <h3 style="margin:0;">🎥 Teleconsultation</h3>
+        <p style="margin:3px 0 0;">Join the video consultation room with your healthcare partner.</p>
+      </div>
+      <button class="btn-sec" onclick="closeVideoConsultation()">Close</button>
+    </div>
+    <iframe id="videoFrame" title="Medi Cure Teleconsultation"
+      style="width:100%;height:620px;border:0;border-radius:6px;background:#111;"
+      allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin:8px 2px 0;">
+      Camera and microphone permissions are controlled by your browser. For this hackathon demo, the consultation room is provided through Jitsi Meet.
+    </p>
+  </div>
+</div>
+
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
@@ -519,6 +537,7 @@
         <p id="apptAddressText" style="color: var(--ink-soft); font-size: 0.85rem;"></p>
         <p id="apptTypeText" style="font-size:0.85rem; color:var(--ochre); font-weight:600;"></p>
         <p id="apptResultText" style="margin-top: 6px; font-weight: 500;"></p>
+        <div id="apptVideoAction" style="display:none;margin-top:14px;"></div>
       </div>
     </section>
 
@@ -990,6 +1009,21 @@
     document.getElementById('confirmModal').style.display = 'none';
   }
 
+  function openVideoConsultation(appointmentId) {
+    if (!appointmentId) return;
+    const room = `MediCure-Consult-${appointmentId}`;
+    const frame = document.getElementById('videoFrame');
+    frame.src = `https://meet.jit.si/${encodeURIComponent(room)}`;
+    document.getElementById('videoModal').style.display = 'flex';
+  }
+
+  function closeVideoConsultation() {
+    const modal = document.getElementById('videoModal');
+    const frame = document.getElementById('videoFrame');
+    frame.src = '';
+    modal.style.display = 'none';
+  }
+
   async function finalizeBooking() {
     closeConfirmModal(); if(!pendingBooking||!activeAccountId)return;
     const {doc,hosp,date,hour,type}=pendingBooking; const box=document.getElementById('apptResult'); box.style.display='block';
@@ -998,7 +1032,18 @@
       const r=await fetch('/api/appointments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patientId:activeAccountId,doctorId:doc.id,date,hour,type})});
       const data=await r.json();
       if(!r.ok){box.className='result-box error';document.getElementById('apptResultText').innerHTML=`<span style="color:#A33;">⚠ ${data.error||'Booking failed.'}</span>`;return;}
-      box.className='result-box'; document.getElementById('apptResultText').innerHTML=`<span style="color:#2A5C3B;">✓ Confirmed slot for ${date} at ${hour.replace('-', ' ')}. Booking registered.</span>`;
+      box.className='result-box';
+      document.getElementById('apptResultText').innerHTML=`<span style="color:#2A5C3B;">✓ Confirmed slot for ${date} at ${hour.replace('-', ' ')}. Booking registered.</span>`;
+      const videoAction=document.getElementById('apptVideoAction');
+      if(videoAction){
+        if(type==='Video / Teleconsultation'){
+          videoAction.style.display='block';
+          videoAction.innerHTML=`<button class="btn" onclick="openVideoConsultation('${data.id}')">🎥 Join Teleconsultation</button><p style="font-size:0.78rem;color:var(--ink-soft);margin:6px 0 0;">Use this button at your appointment time to start the doctor video consultation.</p>`;
+        } else {
+          videoAction.style.display='none';
+          videoAction.innerHTML='';
+        }
+      }
     } catch(e){box.className='result-box error';document.getElementById('apptResultText').innerHTML=`<span style="color:#A33;">⚠ ${e.message}</span>`;}
   }
 

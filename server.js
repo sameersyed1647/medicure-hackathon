@@ -58,11 +58,15 @@ function initDb(){
     FOREIGN KEY(patientId) REFERENCES patients(id) ON DELETE CASCADE
   )`);
 }
+
 // Backward-compatible migration for databases created by the previous build.
-try {
-  const cols = all('PRAGMA table_info(patients)');
-  if (!cols.some(c => c.name === 'phone')) exec("ALTER TABLE patients ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
-} catch (e) { console.error('Patient phone migration:', e.message); }
+// This must run AFTER initDb() so the patients table definitely exists.
+function migrateDb(){
+  try {
+    const cols = all('PRAGMA table_info(patients)');
+    if (!cols.some(c => c.name === 'phone')) exec("ALTER TABLE patients ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+  } catch (e) { console.error('Patient phone migration:', e.message); }
+}
 const doctorOut = r => ({...r, keywords:parse(r.keywords), availableHours:parse(r.availableHours)});
 const hospitalOut = r => ({...r, specialists:parse(r.specialists), distanceKm:Number(r.distanceKm||0)});
 
@@ -132,4 +136,5 @@ app.get('/medicare',(req,res)=>res.redirect('/medicare/'));
 app.get('/partner',(req,res)=>res.redirect('/partner/'));
 app.get('/admin',(req,res)=>res.redirect('/partner/'));
 initDb();
+migrateDb();
 app.listen(PORT, '0.0.0.0', ()=>console.log(`Medi Cure + MediCure-partner running on port ${PORT}`));

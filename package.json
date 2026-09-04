@@ -1,0 +1,10 @@
+{
+  "name": "medicare-ai-hackathon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MediCare AI admin + patient prototype with SQLite backend",
+  "main": "server.js",
+  "scripts": {"start": "node server.js", "dev": "node server.js"},
+  "engines": {"node": ">=22.5.0"},
+  "dependencies": {"express": "^5.1.0"}
+}

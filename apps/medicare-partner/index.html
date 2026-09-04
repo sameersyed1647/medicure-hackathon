@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediCure-partner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B2B22;
+    --ink-soft: #4A5A50;
+    --paper: #EFEEE3;
+    --surface: #FBFAF6;
+    --line: #D8D6C8;
+    --pine: #3E6259;
+    --pine-deep: #2A453E;
+    --ochre: #C98A3E;
+    --ochre-soft: #F1E1C6;
+    --danger: #A33;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 600; margin: 0; color: var(--ink); }
+  code, .mono { font-family: 'IBM Plex Mono', monospace; }
+  button { font-family: inherit; }
+
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--pine-deep);
+    color: #EFEEE3;
+    padding: 28px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .brand .mark { font-family: 'Fraunces', serif; font-size: 1.3rem; }
+  .brand .tag { font-size: 0.78rem; color: #B9C9BF; margin-top: 3px; }
+
+  nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+  nav button {
+    all: unset;
+    cursor: pointer;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #D8E3DD;
+  }
+
+  nav button:hover { background: rgba(255,255,255,0.08); }
+  nav button.active { background: var(--ochre); color: #2A2110; font-weight: 600; }
+
+  .count-pill {
+    float: right;
+    background: rgba(255,255,255,0.14);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 0.75rem;
+  }
+
+  nav button.active .count-pill { background: rgba(0,0,0,0.15); }
+
+  .sidebar-foot { font-size: 0.72rem; color: #8FA69B; }
+
+  /* Main */
+  main { padding: 44px 52px; max-width: 980px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 6px;
+  }
+
+  .panel-head h2 { font-size: 1.5rem; }
+  .panel-sub { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: 26px; }
+
+  .layout-split { display: grid; grid-template-columns: 360px 1fr; gap: 36px; align-items: start; }
+
+  /* Form */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 22px;
+  }
+
+  .form-card h3 { font-size: 1rem; margin-bottom: 16px; color: var(--pine-deep); }
+
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field label { font-size: 0.8rem; color: var(--ink-soft); }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .field input, .field select, .field textarea {
+    font-family: inherit;
+    font-size: 0.92rem;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: 2px solid var(--pine); outline-offset: 1px;
+  }
+
+  .hint { font-size: 0.76rem; color: var(--ink-soft); margin-top: -8px; margin-bottom: 14px; }
+
+  .chip-set { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+
+  .chip {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 14px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+    user-select: none;
+  }
+
+  .chip.selected { background: var(--pine); border-color: var(--pine); color: #F3F1E8; }
+
+  .btn {
+    all: unset;
+    cursor: pointer;
+    display: inline-block;
+    background: var(--pine);
+    color: #F3F1E8;
+    padding: 9px 18px;
+    border-radius: 3px;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+
+  .btn:hover { background: var(--pine-deep); }
+
+  .btn.ghost {
+    background: transparent;
+    border: 1px solid var(--pine);
+    color: var(--pine);
+  }
+
+  .btn.ghost:hover { background: rgba(62,98,89,0.08); }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 4px; }
+
+  .error-line { color: var(--danger); font-size: 0.82rem; margin-top: 8px; display: none; }
+
+  /* Records list */
+  .records-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .records-toolbar input {
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 0.88rem;
+    width: 220px;
+  }
+
+  .record-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .record-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .record-card .r-main { flex: 1; }
+  .record-card .r-name { font-family: 'Fraunces', serif; font-size: 1.02rem; color: var(--pine-deep); }
+  .record-card .r-sub { font-size: 0.82rem; color: var(--ink-soft); margin-top: 2px; }
+  .record-card .r-meta { font-size: 0.78rem; color: var(--ink-soft); margin-top: 6px; }
+  .record-card .r-meta .badge {
+    display: inline-block;
+    background: var(--ochre-soft);
+    color: var(--pine-deep);
+    border-radius: 10px;
+    padding: 2px 8px;
+    margin-right: 6px;
+    font-size: 0.74rem;
+    font-weight: 600;
+  }
+
+  .record-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+
+  .icon-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  .icon-btn:hover { border-color: var(--pine); color: var(--pine); }
+  .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  .empty-state {
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    padding: 24px;
+    text-align: center;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+  }
+
+  /* Export */
+  .export-block { margin-bottom: 30px; }
+  .export-block h3 { font-size: 1rem; margin-bottom: 8px; color: var(--pine-deep); }
+  .export-block p { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 10px; }
+
+  .code-box {
+    position: relative;
+    background: var(--pine-deep);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .code-box pre {
+    margin: 0;
+    padding: 18px;
+    max-height: 340px;
+    overflow: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: #E8ECE7;
+  }
+
+  .copy-btn {
+    all: unset;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: rgba(255,255,255,0.12);
+    color: #EFEEE3;
+    font-size: 0.76rem;
+    padding: 5px 10px;
+    border-radius: 3px;
+  }
+
+  .copy-btn:hover { background: rgba(255,255,255,0.22); }
+  .copy-btn.copied { background: var(--ochre); color: #2A2110; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--pine-deep);
+    color: #EFEEE3;
+    padding: 12px 18px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .toast.visible { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { flex-direction: row; flex-wrap: wrap; }
+    nav { flex-direction: row; flex-wrap: wrap; }
+    main { padding: 24px; }
+    .layout-split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">Medi Cure X - Admin</div>
+      <div class="tag">Admin console</div>
+    </div>
+
+    <nav id="mainNav">
+      <button data-target="doctors" class="active">Doctors <span class="count-pill" id="countDoctors">0</span></button>
+      <button data-target="hospitals">Hospitals <span class="count-pill" id="countHospitals">0</span></button>
+      <button data-target="appointments">Appointments <span class="count-pill" id="countAppointments">0</span></button>
+      <button data-target="care">Care Support</button>
+      <button data-target="export">Export &amp; sync</button>
+    </nav>
+
+    <div class="sidebar-foot">Entries here feed what patients see in the Medi Cure X - Admin app.</div>
+  </aside>
+
+  <main>
+
+    <!-- Doctors -->
+    <section class="panel active" id="panel-doctors">
+      <div class="panel-head"><h2>Doctors</h2></div>
+      <p class="panel-sub">Add the doctors patients can be matched to, with the symptoms they cover and when they're available.</p>
+
+      <div class="layout-split">
+        <div class="form-card">
+          <h3 id="docFormHeading">Add a doctor</h3>
+
+          <div class="field">
+            <label for="docName">Doctor name</label>
+            <input type="text" id="docName" placeholder="Enter your Name">
+          </div>
+
+          <div class="field">
+            <label for="docSpec">Specialization</label>
+            <select id="docSpec">
+              <option value="">Select specialization</option>
+              <option value="Cardiologist">Cardiologist</option>
+              <option value="Dermatologist">Dermatologist</option>
+              <option value="Ophthalmologist">Ophthalmologist</option>
+              <option value="Orthopedic Surgeon">Orthopedic Surgeon</option>
+              <option value="Gastroenterologist">Gastroenterologist</option>
+              <option value="General Physician">General Physician</option>
+              <option value="Pediatrician">Pediatrician</option>
+              <option value="Neurologist">Neurologist</option>
+              <option value="ENT Specialist">ENT Specialist</option>
+              <option value="Gynecologist">Gynecologist</option>
+              <option value="Psychiatrist">Psychiatrist</option>
+              <option value="Dentist">Dentist</option>
+              <option value="Pulmonologist">Pulmonologist</option>
+              <option value="Nephrologist">Nephrologist</option>
+              <option value="Urologist">Urologist</option>
+              <option value="Endocrinologist">Endocrinologist</option>
+              <option value="Oncologist">Oncologist</option>
+              <option value="General Surgeon">General Surgeon</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="docKeywords">Symptoms / keywords this doctor covers</label>
+            <input type="text" id="docKeywords">
+          </div>
+          <p class="hint">Comma-separated. Used to match patients' symptoms to this doctor.</p>
+
+          <div class="field">
+            <label for="docHospital">Hospital</label>
+            <input type="text" id="docHospital">
+          </div>
+
+          <div class="field">
+            <label for="docArea">Area</label>
+            <input type="text" id="docArea">
+          </div>
+
+          <div class="field">
+            <label for="docAddress">Full address</label>
+            <input type="text" id="docAddress">
+          </div>
+
+          <div class="field">
+            <label>Available time slots</label>
+            <div class="chip-set" id="docHourChips"></div>
+          </div>
+          <p class="hint" id="docTimingPreview">Timing shown to patients: —</p>
+
+          <div class="form-actions">
+            <button class="btn" onclick="saveDoctor()" id="docSaveBtn">Add doctor</button>
+            <button class="btn ghost" onclick="resetDoctorForm()" id="docCancelBtn" style="display:none;">Cancel edit</button>
+          </div>
+          <p class="error-line" id="docError">Please fill in name, specialization, hospital, and at least one time slot.</p>
+        </div>
+
+        <div>
+          <div class="record-list" id="doctorList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hospitals -->
+    <section class="panel" id="panel-hospitals">
+      <div class="panel-head"><h2>Hospitals</h2></div>
+      <p class="panel-sub">Add hospitals patients can browse in Find Hospitals, along with the specialists based there.</p>
+
+      <div class="layout-split">
+        <div class="form-card">
+          <h3 id="hospFormHeading">Add a hospital</h3>
+
+          <div class="field">
+            <label for="hospName">Hospital name</label>
+            <input type="text" id="hospName">
+          </div>
+
+          <div class="field">
+            <label for="hospArea">Area</label>
+            <input type="text" id="hospArea">
+          </div>
+
+          <div class="field">
+            <label for="hospAddress">Full address</label>
+            <input type="text" id="hospAddress">
+          </div>
+
+          <div class="field">
+            <label for="hospStatus">Status shown to patients</label>
+            <select id="hospStatus">
+              <option>24/7 Emergency Available</option>
+              <option>OPD Open Now</option>
+              <option>OPD Closed — Opens Tomorrow</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="hospSpecialists">Specialists based here</label>
+            <textarea id="hospSpecialists" placeholder="One per line"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn" onclick="saveHospital()" id="hospSaveBtn">Add hospital</button>
+            <button class="btn ghost" onclick="resetHospitalForm()" id="hospCancelBtn" style="display:none;">Cancel edit</button>
+          </div>
+          <p class="error-line" id="hospError">Please fill in name, area, and address.</p>
+        </div>
+
+        <div>
+          <div class="record-list" id="hospitalList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Appointments -->
+    <section class="panel" id="panel-appointments">
+      <div class="panel-head"><h2>Appointments</h2></div>
+      <p class="panel-sub">Patient bookings submitted from the patient app appear here in real time.</p>
+      <div class="record-list" id="appointmentList"></div>
+    </section>
+
+    <!-- Care Support -->
+    <section class="panel" id="panel-care">
+      <div class="panel-head"><h2>Care Support</h2></div>
+      <p class="panel-sub">Track medicine availability, referrals and high-risk follow-ups from one dashboard.</p>
+
+      <div class="layout-split">
+        <div class="form-card">
+          <h3>Add / update medicine</h3>
+          <div class="field"><label>Medicine name</label><input id="medName" placeholder="Paracetamol"></div>
+          <div class="field"><label>Facility</label><input id="medFacility" placeholder="Rural PHC"></div>
+          <div class="field"><label>Area</label><input id="medArea" placeholder="Village / locality"></div>
+          <div class="field"><label>Status</label><select id="medStatus"><option>Available</option><option>Low Stock</option><option>Unavailable</option></select></div>
+          <div class="field"><label>Quantity</label><input type="number" id="medQty" min="0" value="0"></div>
+          <button class="btn" onclick="saveMedicine()">Add Medicine</button>
+        </div>
+        <div><div class="record-list" id="medicineAdminList"></div></div>
+      </div>
+
+      <div class="layout-split" style="margin-top:22px;">
+        <div class="form-card">
+          <h3>Create referral</h3>
+          <div class="field"><label>Patient</label><select id="refPatient"></select></div>
+          <div class="field"><label>From facility</label><input id="refFrom" placeholder="PHC"></div>
+          <div class="field"><label>Refer to</label><input id="refTo" placeholder="District Hospital"></div>
+          <div class="field"><label>Reason</label><input id="refReason" placeholder="Specialist consultation"></div>
+          <div class="field"><label>Appointment date (optional)</label><input type="date" id="refDate"></div>
+          <button class="btn" onclick="saveReferral()">Create Referral</button>
+        </div>
+        <div><div class="record-list" id="referralAdminList"></div></div>
+      </div>
+
+      <div class="layout-split" style="margin-top:22px;">
+        <div class="form-card">
+          <h3>High-risk follow-up</h3>
+          <div class="field"><label>Patient</label><select id="fuPatient"></select></div>
+          <div class="field"><label>Condition / reason</label><input id="fuCondition" placeholder="Chronic condition follow-up"></div>
+          <div class="field"><label>Due date</label><input type="date" id="fuDate"></div>
+          <div class="field"><label>Assigned health worker</label><input id="fuWorker" placeholder="ASHA / PHC worker"></div>
+          <button class="btn" onclick="saveFollowup()">Add Follow-up</button>
+        </div>
+        <div><div class="record-list" id="followupAdminList"></div></div>
+      </div>
+    </section>
+
+    <!-- Export -->
+    <section class="panel" id="panel-export">
+      <div class="panel-head"><h2>Export &amp; sync</h2></div>
+      <p class="panel-sub">Changes are saved to the shared SQLite database and are immediately available to the patient app.</p>
+
+      <div class="export-block">
+        <h3>Doctors data</h3>
+        <p>Live API preview for doctors.</p>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyBlock('doctorsCode', this)">Copy</button>
+          <pre id="doctorsCode"></pre>
+        </div>
+      </div>
+
+      <div class="export-block">
+        <h3>Hospitals data</h3>
+        <p>Live API preview for hospitals.</p>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyBlock('hospitalsCode', this)">Copy</button>
+          <pre id="hospitalsCode"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── DATA LAYER ──────────────────────────────────────────────────────
+  // Everything below lives only in this browser tab's memory — refresh
+  // the page and it resets to the seed data. There is no backend yet.
+  //
+  // When you add one: replace the two arrays below with data fetched
+  // from your API (e.g. `let doctors = await fetch('/api/doctors').then(r => r.json())`),
+  // and inside saveDoctor()/deleteDoctor()/saveHospital()/deleteHospital()
+  // swap the local array edits for POST/PUT/DELETE calls to that API.
+  // Everything else (forms, search, rendering) can stay as-is.
+
+  const HOUR_SLOTS = [
+    { value: '9-AM', label: '09:00 AM' },
+    { value: '10-AM', label: '10:00 AM' },
+    { value: '11-AM', label: '11:00 AM' },
+    { value: '12-PM', label: '12:00 PM' },
+    { value: '2-PM', label: '02:00 PM' },
+    { value: '3-PM', label: '03:00 PM' },
+    { value: '5-PM', label: '05:00 PM' },
+    { value: '6-PM', label: '06:00 PM' }
+  ];
+
+  // Seeded with the dataset already used in the patient app, so this
+  // console starts in sync and any edits can be exported back to it.
+  let doctors = [];
+  let hospitals = [];
+  let appointments = [];
+
+  let editingDoctorId = null;
+  let editingHospitalIndex = null;
+  let selectedHours = [];
+
+  // Nav
+  document.querySelectorAll('#mainNav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('#mainNav button').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + btn.dataset.target).classList.add('active');
+      btn.classList.add('active');
+      if (btn.dataset.target === 'export') renderExport();
+      if (btn.dataset.target === 'appointments') loadAppointments();
+    });
+  });
+
+  function timingStrFromHours(hourValues) {
+    if (hourValues.length === 0) return '';
+    const ordered = HOUR_SLOTS.filter(s => hourValues.includes(s.value));
+    return ordered[0].label + ' – ' + ordered[ordered.length - 1].label;
+  }
+
+  function renderHourChips() {
+    const wrap = document.getElementById('docHourChips');
+    wrap.innerHTML = '';
+    HOUR_SLOTS.forEach(slot => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (selectedHours.includes(slot.value) ? ' selected' : '');
+      chip.textContent = slot.label;
+      chip.onclick = () => {
+        if (selectedHours.includes(slot.value)) {
+          selectedHours = selectedHours.filter(v => v !== slot.value);
+        } else {
+          selectedHours.push(slot.value);
+        }
+        renderHourChips();
+      };
+      wrap.appendChild(chip);
+    });
+    document.getElementById('docTimingPreview').textContent =
+      'Timing shown to patients: ' + (timingStrFromHours(selectedHours) || '—');
+  }
+
+  function resetDoctorForm() {
+    editingDoctorId = null;
+    selectedHours = [];
+    document.getElementById('docName').value = '';
+    document.getElementById('docSpec').value = '';
+    document.getElementById('docKeywords').value = '';
+    document.getElementById('docHospital').value = '';
+    document.getElementById('docArea').value = '';
+    document.getElementById('docAddress').value = '';
+    document.getElementById('docFormHeading').textContent = 'Add a doctor';
+    document.getElementById('docSaveBtn').textContent = 'Add doctor';
+    document.getElementById('docCancelBtn').style.display = 'none';
+    document.getElementById('docError').style.display = 'none';
+    renderHourChips();
+  }
+
+  async function saveDoctor() {
+    const name = document.getElementById('docName').value.trim();
+    const spec = document.getElementById('docSpec').value.trim();
+    const keywords = document.getElementById('docKeywords').value.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const hospital = document.getElementById('docHospital').value.trim();
+    const area = document.getElementById('docArea').value.trim();
+    const address = document.getElementById('docAddress').value.trim();
+    if (!name || !spec || !hospital || selectedHours.length === 0) {
+      document.getElementById('docError').style.display = 'block'; return;
+    }
+    document.getElementById('docError').style.display = 'none';
+    const h = hospitals.find(x => x.name.toLowerCase() === hospital.toLowerCase());
+    const record = { id: editingDoctorId, name, spec, keywords: keywords.length ? keywords : [spec.toLowerCase()], hospitalId: h?.id || null, hospital, area, address, availableHours: [...selectedHours] };
+    try {
+      const response = await fetch(editingDoctorId ? `/api/doctors/${editingDoctorId}` : '/api/doctors', {
+        method: editingDoctorId ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(record)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not save doctor');
+      await loadDoctors(); resetDoctorForm(); showToast(editingDoctorId ? 'Doctor updated' : 'Doctor added');
+    } catch (e) { showToast(e.message); }
+  }
+
+  function editDoctor(id) {
+    const doc = doctors.find(d => d.id === id);
+    if (!doc) return;
+    editingDoctorId = id;
+    selectedHours = [...doc.availableHours];
+    document.getElementById('docName').value = doc.name;
+    document.getElementById('docSpec').value = doc.spec;
+    document.getElementById('docKeywords').value = doc.keywords.join(', ');
+    document.getElementById('docHospital').value = doc.hospital;
+    document.getElementById('docArea').value = doc.area;
+    document.getElementById('docAddress').value = doc.address;
+    document.getElementById('docFormHeading').textContent = 'Edit doctor';
+    document.getElementById('docSaveBtn').textContent = 'Save changes';
+    document.getElementById('docCancelBtn').style.display = 'inline-block';
+    renderHourChips();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteDoctor(id) {
+    if (!confirm('Delete this doctor?')) return;
+    try { const r=await fetch(`/api/doctors/${id}`,{method:'DELETE'}); const d=await r.json(); if(!r.ok)throw new Error(d.error||'Delete failed'); await loadDoctors(); if(editingDoctorId===id)resetDoctorForm(); showToast('Doctor removed'); }
+    catch(e){showToast(e.message);}
+  }
+
+  function renderDoctorList() {
+    const list = document.getElementById('doctorList');
+    list.innerHTML = '';
+
+    if (doctors.length === 0) {
+      list.innerHTML = '<div class="empty-state">No doctors added yet. Add one using the form.</div>';
+    } else {
+      doctors.forEach(doc => {
+        const timing = timingStrFromHours(doc.availableHours);
+        const card = document.createElement('div');
+        card.className = 'record-card';
+        card.innerHTML = `
+          <div class="r-main">
+            <div class="r-name">${doc.name}</div>
+            <div class="r-sub">${doc.spec} — ${doc.hospital}, ${doc.area}</div>
+            <div class="r-meta"><span class="badge">Available ${timing}</span>${doc.keywords.join(', ')}</div>
+          </div>
+          <div class="record-actions">
+            <button class="icon-btn" onclick="editDoctor('${doc.id}')">Edit</button>
+            <button class="icon-btn danger" onclick="deleteDoctor('${doc.id}')">Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById('countDoctors').textContent = doctors.length;
+  }
+
+  function resetHospitalForm() {
+    editingHospitalIndex = null;
+    document.getElementById('hospName').value = '';
+    document.getElementById('hospArea').value = '';
+    document.getElementById('hospAddress').value = '';
+    document.getElementById('hospStatus').value = '24/7 Emergency Available';
+    document.getElementById('hospSpecialists').value = '';
+    document.getElementById('hospFormHeading').textContent = 'Add a hospital';
+    document.getElementById('hospSaveBtn').textContent = 'Add hospital';
+    document.getElementById('hospCancelBtn').style.display = 'none';
+    document.getElementById('hospError').style.display = 'none';
+  }
+
+  async function saveHospital() {
+    const name=document.getElementById('hospName').value.trim();
+    const area=document.getElementById('hospArea').value.trim();
+    const address=document.getElementById('hospAddress').value.trim();
+    const status=document.getElementById('hospStatus').value;
+    const specialists=document.getElementById('hospSpecialists').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if(!name||!area||!address){document.getElementById('hospError').style.display='block';return;}
+    document.getElementById('hospError').style.display='none';
+    const record={name,area,address,status,specialists};
+    try {
+      const h=editingHospitalIndex!==null ? hospitals[editingHospitalIndex] : null;
+      const r=await fetch(h?`/api/hospitals/${h.id}`:'/api/hospitals',{method:h?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(record)});
+      const d=await r.json(); if(!r.ok)throw new Error(d.error||'Could not save hospital');
+      await loadHospitals(); resetHospitalForm(); showToast(h?'Hospital updated':'Hospital added');
+    } catch(e){showToast(e.message);}
+  }
+
+  function editHospital(index) {
+    const h = hospitals[index];
+    if (!h) return;
+    editingHospitalIndex = index;
+    document.getElementById('hospName').value = h.name;
+    document.getElementById('hospArea').value = h.area;
+    document.getElementById('hospAddress').value = h.address;
+    document.getElementById('hospStatus').value = h.status;
+    document.getElementById('hospSpecialists').value = h.specialists.join('\n');
+    document.getElementById('hospFormHeading').textContent = 'Edit hospital';
+    document.getElementById('hospSaveBtn').textContent = 'Save changes';
+    document.getElementById('hospCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteHospital(index) {
+    const h=hospitals[index]; if(!h||!confirm('Delete this hospital?'))return;
+    try { const r=await fetch(`/api/hospitals/${h.id}`,{method:'DELETE'}); const d=await r.json(); if(!r.ok)throw new Error(d.error||'Delete failed'); await loadHospitals(); resetHospitalForm(); showToast('Hospital removed'); }
+    catch(e){showToast(e.message);}
+  }
+
+  function renderHospitalList() {
+    const list = document.getElementById('hospitalList');
+    list.innerHTML = '';
+
+    const indexed = hospitals.map((h, index) => ({ h, index }));
+
+    if (indexed.length === 0) {
+      list.innerHTML = '<div class="empty-state">No hospitals added yet. Add one using the form.</div>';
+    } else {
+      indexed.forEach(({ h, index }) => {
+        const card = document.createElement('div');
+        card.className = 'record-card';
+        card.innerHTML = `
+          <div class="r-main">
+            <div class="r-name">${h.name}</div>
+            <div class="r-sub">${h.area} — ${h.address}</div>
+            <div class="r-meta"><span class="badge">${h.status}</span>${h.specialists.join(', ') || 'No specialists listed'}</div>
+          </div>
+          <div class="record-actions">
+            <button class="icon-btn" onclick="editHospital(${index})">Edit</button>
+            <button class="icon-btn danger" onclick="deleteHospital(${index})">Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById('countHospitals').textContent = hospitals.length;
+  }
+
+  function renderExport() {
+    document.getElementById('doctorsCode').textContent = JSON.stringify(doctors, null, 2);
+    document.getElementById('hospitalsCode').textContent = JSON.stringify(hospitals, null, 2);
+  }
+
+  async function loadDoctors() {
+    const r=await fetch('/api/doctors'); if(!r.ok)throw new Error('Could not load doctors'); doctors=await r.json(); renderDoctorList();
+  }
+  async function loadHospitals() {
+    const r=await fetch('/api/hospitals'); if(!r.ok)throw new Error('Could not load hospitals'); hospitals=await r.json(); renderHospitalList();
+  }
+  async function loadAppointments() {
+    try { const r=await fetch('/api/appointments'); if(!r.ok)throw new Error('Could not load appointments'); appointments=await r.json(); renderAppointments(); } catch(e){showToast(e.message);} }
+  function renderAppointments(){
+    const list=document.getElementById('appointmentList'); if(!list)return; list.innerHTML='';
+    if(!appointments.length){list.innerHTML='<div class="empty-state">No patient appointments yet.</div>'; }
+    appointments.forEach(a=>{
+      const card=document.createElement('div'); card.className='record-card';
+      card.innerHTML=`<div class="r-main"><div class="r-name">${a.patientName} → ${a.doctorName}</div><div class="r-sub">${a.doctorSpec} — ${a.hospitalName||'Facility'}</div><div class="r-meta"><span class="badge">${a.status}</span>${a.date} at ${a.hour.replace('-', ' ')} · ${a.type}</div><div class="r-sub">Patient phone: ${a.patientPhone||'N/A'} · Area: ${a.patientAddress||'N/A'}</div></div><div class="record-actions"><button class="icon-btn" onclick="updateAppointmentStatus('${a.id}','Completed')">Complete</button><button class="icon-btn danger" onclick="updateAppointmentStatus('${a.id}','Cancelled')">Cancel</button></div>`; list.appendChild(card);
+    });
+    document.getElementById('countAppointments').textContent=appointments.length;
+  }
+  async function updateAppointmentStatus(id,status){try{const r=await fetch(`/api/appointments/${id}/status`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Update failed');await loadAppointments();showToast(`Appointment ${status.toLowerCase()}`);}catch(e){showToast(e.message);}}
+
+  let medicines=[], referrals=[], followups=[], patients=[];
+  async function loadPatients(){try{const r=await fetch('/api/patients');if(!r.ok)return;patients=await r.json();['refPatient','fuPatient'].forEach(id=>{const s=document.getElementById(id);if(s)s.innerHTML=patients.map(p=>`<option value="${p.id}">${p.name} (${p.phone||'no phone'})</option>`).join('');});}catch(e){}}
+  function renderMedicineAdmin(){const box=document.getElementById('medicineAdminList');if(!box)return;box.innerHTML=medicines.length?medicines.map(m=>`<div class="record-card"><div class="r-main"><div class="r-name">${m.name}</div><div class="r-sub">${m.facility} — ${m.area}</div><div class="r-meta"><span class="badge">${m.status}</span> Qty: ${m.quantity}</div></div><div class="record-actions"><button class="icon-btn danger" onclick="deleteMedicine('${m.id}')">Remove</button></div></div>`).join(''):'<div class="empty-state">No medicines added.</div>';}
+  function renderReferralAdmin(){const box=document.getElementById('referralAdminList');if(!box)return;box.innerHTML=referrals.length?referrals.map(r=>`<div class="record-card"><div class="r-main"><div class="r-name">${r.patientName}: ${r.fromFacility} → ${r.toFacility}</div><div class="r-sub">${r.reason} · Phone: ${r.patientPhone||'N/A'}</div><div class="r-meta"><span class="badge">${r.status}</span>${r.appointmentDate?' · '+r.appointmentDate:''}</div></div><div class="record-actions"><button class="icon-btn" onclick="updateReferral('${r.id}','Appointment Pending')">Pending</button><button class="icon-btn" onclick="updateReferral('${r.id}','Consultation Completed')">Complete</button></div></div>`).join(''):'<div class="empty-state">No referrals yet.</div>';}
+  function renderFollowupAdmin(){const box=document.getElementById('followupAdminList');if(!box)return;box.innerHTML=followups.length?followups.map(f=>`<div class="record-card"><div class="r-main"><div class="r-name">${f.patientName} — ${f.condition}</div><div class="r-sub">Due: ${f.dueDate} · ${f.assignedTo} · Phone: ${f.patientPhone||'N/A'}</div><div class="r-meta"><span class="badge">${f.status}</span></div></div><div class="record-actions"><button class="icon-btn" onclick="updateFollowup('${f.id}','Completed')">Complete</button></div></div>`).join(''):'<div class="empty-state">No follow-ups yet.</div>';}
+  async function loadCareAdmin(){try{const [m,r,f]=await Promise.all([fetch('/api/medicines'),fetch('/api/referrals'),fetch('/api/followups')]);if(m.ok)medicines=await m.json();if(r.ok)referrals=await r.json();if(f.ok)followups=await f.json();renderMedicineAdmin();renderReferralAdmin();renderFollowupAdmin();await loadPatients();}catch(e){showToast('Could not load care support');}}
+  async function saveMedicine(){const body={name:document.getElementById('medName').value.trim(),facility:document.getElementById('medFacility').value.trim(),area:document.getElementById('medArea').value.trim(),status:document.getElementById('medStatus').value,quantity:document.getElementById('medQty').value};try{const r=await fetch('/api/medicines',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');await loadCareAdmin();showToast('Medicine added');}catch(e){showToast(e.message);}}
+  async function deleteMedicine(id){if(!confirm('Remove this medicine entry?'))return;await fetch('/api/medicines/'+id,{method:'DELETE'});await loadCareAdmin();}
+  async function saveReferral(){const body={patientId:refPatient.value,fromFacility:refFrom.value.trim(),toFacility:refTo.value.trim(),reason:refReason.value.trim(),appointmentDate:refDate.value||null};try{const r=await fetch('/api/referrals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');await loadCareAdmin();showToast('Referral created');}catch(e){showToast(e.message);}}
+  async function updateReferral(id,status){const r=await fetch('/api/referrals/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});if(r.ok)await loadCareAdmin();}
+  async function saveFollowup(){const body={patientId:fuPatient.value,condition:fuCondition.value.trim(),dueDate:fuDate.value,assignedTo:fuWorker.value.trim()};try{const r=await fetch('/api/followups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');await loadCareAdmin();showToast('Follow-up added');}catch(e){showToast(e.message);}}
+  async function updateFollowup(id,status){const r=await fetch('/api/followups/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});if(r.ok)await loadCareAdmin();}
+
+  function copyBlock(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+
+  let toastTimer = null;
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('visible'), 1800);
+  }
+
+  renderHourChips();
+  Promise.all([loadDoctors(), loadHospitals(), loadAppointments()]).catch(e => showToast(e.message));
+</script>
+
+</body>
+</html>

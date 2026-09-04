@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediCare AI - Local Healthcare Network</title>
+
+<!-- Firebase SDKs (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B2B22;
+    --ink-soft: #4A5A50;
+    --paper: #EFEEE3;
+    --surface: #FBFAF6;
+    --line: #D8D6C8;
+    --pine: #3E6259;
+    --pine-deep: #2A453E;
+    --ochre: #C98A3E;
+    --ochre-soft: #F1E1C6;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  button { font-family: inherit; }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(27, 43, 34, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+
+  .modal-card {
+    background: var(--paper);
+    padding: 32px;
+    border-radius: 6px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+
+  .modal-card h3 { font-size: 1.3rem; margin-bottom: 12px; color: var(--pine-deep); }
+  .modal-card p { color: var(--ink-soft); font-size: 0.95rem; margin: 6px 0; }
+  
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+
+  .btn-sec {
+    all: unset;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--pine);
+    color: var(--pine);
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--pine-deep);
+    color: #EFEEE3;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .brand .mark {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.01em;
+  }
+
+  .brand .tag { font-size: 0.8rem; color: #B9C9BF; }
+
+  .lang-select-box, .account-select-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .lang-select-box label, .account-select-box label {
+    font-size: 0.75rem;
+    color: #B9C9BF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .lang-select-box select, .account-select-box select {
+    background: rgba(255,255,255,0.1);
+    color: #EFEEE3;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  .lang-select-box select option, .account-select-box select option {
+    background: var(--pine-deep);
+    color: #EFEEE3;
+  }
+
+  .patient-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 4px;
+    padding: 14px;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .patient-card.visible { display: block; }
+  .patient-card .p-name { font-family: 'Fraunces', serif; font-size: 1.05rem; margin-bottom: 4px; }
+  .patient-card .p-line { color: #C7D3CB; margin: 2px 0; }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  nav button {
+    all: unset;
+    cursor: pointer;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #D8E3DD;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  nav button:hover { background: rgba(255,255,255,0.08); }
+  nav button.active { background: var(--ochre); color: #2A2110; font-weight: 600; }
+  nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .logout-btn {
+    display: none;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #EFEEE3;
+    padding: 9px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .logout-btn:hover { background: rgba(255,255,255,0.1); }
+  .logout-btn.visible { display: block; }
+
+  .sidebar-foot { font-size: 0.75rem; color: #8FA69B; }
+
+  /* Main Area */
+  main { padding: 48px 56px; max-width: 900px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .eyebrow-line {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 12px;
+  }
+
+  .eyebrow-line .num { font-family: 'Fraunces', serif; font-size: 0.95rem; color: var(--pine); }
+  h2.section-title { font-size: 1.6rem; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+    max-width: 560px;
+  }
+
+  .field label { font-size: 0.85rem; color: var(--ink-soft); }
+
+  .field input, .field select, .field textarea {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.95rem;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: 2px solid var(--pine);
+    outline-offset: 1px;
+  }
+
+  .field textarea { resize: vertical; min-height: 70px; }
+
+  .field-row { display: flex; gap: 12px; max-width: 560px; }
+  .field-row .field { flex: 1; }
+
+  .btn {
+    all: unset;
+    cursor: pointer;
+    display: inline-block;
+    background: var(--pine);
+    color: #F3F1E8;
+    padding: 10px 20px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.15s ease;
+  }
+
+  .btn:hover { background: var(--pine-deep); }
+
+  .result-box {
+    background: var(--surface);
+    border-left: 4px solid var(--pine);
+    padding: 16px 18px;
+    border-radius: 2px;
+    margin-top: 18px;
+  }
+
+  .result-box.error { border-left-color: #A33; background: #FDF2F2; }
+  .result-box h3 { font-size: 1rem; margin-bottom: 6px; }
+  .result-box p { margin: 4px 0; color: var(--ink-soft); font-size: 0.9rem; }
+
+  .disclaimer {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    row-gap: 12px;
+    max-width: 550px;
+    margin-top: 8px;
+  }
+
+  .details-grid .k { color: var(--ink-soft); font-size: 0.85rem; }
+  .details-grid .v { font-family: 'Fraunces', serif; font-size: 1rem; }
+
+  .hospital-list, .symp-cards-list, .medicine-list { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  .empty-state {
+    padding: 32px;
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin-top: 16px;
+  }
+
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    background: var(--surface);
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+
+  .filter-bar input, .filter-bar select {
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 0.85rem;
+  }
+
+  .teleconsult-frame {
+    width: 100%;
+    height: 500px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+
+  @media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { flex-direction: row; flex-wrap: wrap; padding: 16px; }
+    .patient-card { display: none !important; }
+    nav { flex-direction: row; flex-wrap: wrap; }
+    main { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="langModal">
+  <div class="modal-card" style="text-align: center;">
+    <h2>Welcome to MediCare Network</h2>
+    <p>Please select your language / भाषा चुनें</p>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px;">
+      <button class="btn" onclick="selectInitialLang('en')">English</button>
+      <button class="btn" onclick="selectInitialLang('hi')">हिंदी (Hindi)</button>
+      <button class="btn" onclick="selectInitialLang('te')">తెలుగు (Telugu)</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal" style="display: none;">
+  <div class="modal-card">
+    <h3>Confirm Booking Request</h3>
+    <p id="cDoc"><strong>Doctor:</strong> —</p>
+    <p id="cHosp"><strong>Hospital:</strong> —</p>
+    <p id="cAddr"><strong>Address:</strong> —</p>
+    <p id="cType"><strong>Type:</strong> —</p>
+    <p id="cTime"><strong>Slot:</strong> —</p>
+    
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="closeConfirmModal()">Edit Request</button>
+      <button class="btn" onclick="finalizeBooking()">Confirm & Book</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">MediCare Network</div>
+      <div class="tag" id="t-tag">Personal health companion</div>
+    </div>
+
+    <div class="account-select-box">
+      <label id="t-accLabel">Active Account / खाता</label>
+      <select id="accountSelect" onchange="switchAccount(this.value)">
+        <option value="new">+ Add New Patient</option>
+      </select>
+    </div>
+
+    <div class="lang-select-box">
+      <label for="langSelect" id="t-langLabel">Language / भाषा</label>
+      <select id="langSelect" onchange="changeLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="hi">हिंदी (Hindi)</option>
+        <option value="te">తెలుగు (Telugu)</option>
+      </select>
+    </div>
+
+    <div class="patient-card" id="patientCard">
+      <div class="p-name" id="pcName">—</div>
+      <div class="p-line" id="pcAge">Age: —</div>
+      <div class="p-line" id="pcBlood">Blood Group: —</div>
+    </div>
+
+    <nav id="mainNav">
+      <button data-target="register" class="active" id="nav-reg">Registration</button>
+      <button data-target="appointment" disabled id="nav-appt">Book Appointment</button>
+      <button data-target="consultation" disabled id="nav-consult">Attend Consultations</button>
+      <button data-target="symptoms" disabled id="nav-symp">Symptom Checker</button>
+      <button data-target="hospital" disabled id="nav-hosp">Find Hospitals</button>
+      <button data-target="medicines" disabled id="nav-meds">Medicines</button>
+      <button data-target="details" disabled id="nav-dtls">My Details</button>
+    </nav>
+
+    <button class="logout-btn" id="logoutBtn" onclick="logoutPatient()">Logout</button>
+    <div class="sidebar-foot" id="t-foot">Not a substitute for professional medical care.</div>
+  </aside>
+
+  <main>
+    <section class="section active" id="section-register">
+      <div class="eyebrow-line">
+        <span class="num" id="t-regNum">Welcome</span>
+        <h2 class="section-title" id="t-regTitle">Patient Registration</h2>
+      </div>
+
+      <div class="field">
+        <label for="regName" id="t-lbl-name">Full name</label>
+        <input type="text" id="regName" placeholder="">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="regAge" id="t-lbl-age">Age</label>
+          <input type="number" id="regAge" min="0" max="120" placeholder="">
+        </div>
+        <div class="field">
+          <label for="regGender" id="t-lbl-gender">Gender</label>
+          <select id="regGender">
+            <option value="">Select</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="regBlood" id="t-lbl-blood">Blood Group (Optional)</label>
+        <select id="regBlood">
+          <option value="">Select Blood Group (Optional)</option>
+          <option value="A+">A+</option><option value="A-">A-</option>
+          <option value="B+">B+</option><option value="B-">B-</option>
+          <option value="O+">O+</option><option value="O-">O-</option>
+          <option value="AB+">AB+</option><option value="AB-">AB-</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="regHouse" id="t-lbl-house">House / Flat Number</label>
+        <input type="text" id="regHouse" placeholder="">
+      </div>
+
+      <div class="field">
+        <label for="regAddress" id="t-lbl-address">Present Locality / Area</label>
+        <input type="text" id="regAddress" placeholder="">
+      </div>
+
+      <div class="field">
+        <label for="regHistory" id="t-lbl-history">Medical history (Optional)</label>
+        <textarea id="regHistory" placeholder=""></textarea>
+      </div>
+
+      <button class="btn" id="t-btn-reg" onclick="registerPatient()">Save Profile</button>
+      <p id="regError" style="color:#A33; font-size:0.85rem; margin-top:8px; display:none;">Please fill required fields (Name, Age, Gender).</p>
+    </section>
+
+    <section class="section" id="section-appointment">
+      <div class="eyebrow-line">
+        <span class="num">01</span>
+        <h2 class="section-title" id="t-apptTitle">Book an Appointment</h2>
+      </div>
+
+      <div class="field">
+        <label for="apptCategorySelect" id="t-lbl-apptcat">Select Specialization / Category</label>
+        <select id="apptCategorySelect" onchange="suggestDoctorsForAppointment()">
+          <option value="">Select Category</option>
+          <option value="Cardiologist">Cardiology / Heart</option>
+          <option value="Dermatologist">Dermatology / Skin Care</option>
+          <option value="Ophthalmologist">Ophthalmology / Eye Care</option>
+          <option value="Orthopedic Surgeon">Orthopedics / Bone & Joint</option>
+          <option value="Gastroenterologist">Gastroenterology / Digestive System</option>
+          <option value="General Physician">General Medicine / Primary Care</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="apptDocSelect">Designated Doctors Near You</label>
+        <select id="apptDocSelect" onchange="updateApptDocInfo()">
+          <option value="">No doctors available</option>
+        </select>
+        <p id="apptDocInfo" style="font-size:0.82rem; color:var(--pine); font-weight:600; margin:2px 0 0;"></p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="apptType">Consultation Type</label>
+          <select id="apptType">
+            <option value="In-Person Clinic Visit">In-Person Visit</option>
+            <option value="Video Consultation">Video Consultation</option>
+            <option value="Video / Teleconsultation">Teleconsultation</option>
+            <option value="Urgent Specialist Visit">Urgent Care</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="apptDate" id="t-lbl-date">Preferred Date</label>
+          <input type="date" id="apptDate">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="apptHour" id="t-lbl-hour">Preferred Time Slot</label>
+        <select id="apptHour">
+          <option value="09:00 AM">09:00 AM</option>
+          <option value="10:00 AM">10:00 AM</option>
+          <option value="11:00 AM">11:00 AM</option>
+          <option value="12:00 PM">12:00 PM</option>
+          <option value="02:00 PM">02:00 PM</option>
+          <option value="03:00 PM">03:00 PM</option>
+          <option value="04:00 PM">04:00 PM</option>
+          <option value="05:00 PM">05:00 PM</option>
+        </select>
+      </div>
+
+      <button class="btn" id="t-btn-appt" onclick="initiateBooking()">Show Results</button>
+
+      <div class="result-box" id="apptResult" style="display:none;">
+        <h3 id="t-apptResHead">Appointment Status</h3>
+        <p id="apptDoctorText" style="font-weight: 600; color: var(--pine-deep); margin-top:4px;"></p>
+        <p id="apptHospitalText" style="color: var(--ink);"></p>
+        <p id="apptAddressText" style="color: var(--ink-soft); font-size: 0.85rem;"></p>
+        <p id="apptTypeText" style="font-size:0.85rem; color:var(--ochre); font-weight:600;"></p>
+        <p id="apptResultText" style="margin-top: 6px; font-weight: 500;"></p>
+      </div>
+    </section>
+
+    <!-- SECTION: ATTEND CONSULTATIONS -->
+    <section class="section" id="section-consultation">
+      <div class="eyebrow-line">
+        <span class="num">02</span>
+        <h2 class="section-title" id="t-consultTitle">Attend Consultations</h2>
+      </div>
+
+      <div class="result-box" style="margin-top:0; margin-bottom: 24px;">
+        <h3 id="t-consultRoomHeader">Join Live Teleconsultation Room</h3>
+        <p style="margin-bottom:12px;" id="t-consultRoomDesc">Enter your Appointment or Consultation ID provided by the hospital to join your live video or audio session.</p>
+        
+        <div class="field">
+          <label for="patientConsultRoomId" id="t-lbl-consultId">Consultation / Appointment ID</label>
+          <input type="text" id="patientConsultRoomId" placeholder="e.g. APPT-109283">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 8px;">
+          <button class="btn" id="t-btn-startVideo" onclick="startPatientConsultation('video')">📹 Join Video Consultation</button>
+          <button class="btn" id="t-btn-startAudio" style="background: var(--pine-deep);" onclick="startPatientConsultation('audio')">📞 Audio Call Only</button>
+        </div>
+      </div>
+
+      <div style="background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px;">
+        <h3 style="font-size:1.1rem; margin-bottom:12px;" id="t-consultScreenTitle">Live Call Screen</h3>
+        <div id="patientConsultContainer" class="teleconsult-frame">
+          <p style="color: rgba(255,255,255,0.7);" id="t-consultPlaceholder">Enter your Consultation ID above to join the call.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-symptoms">
+      <div class="eyebrow-line">
+        <span class="num">03</span>
+        <h2 class="section-title" id="t-sympTitle">Symptom Checker</h2>
+      </div>
+
+      <div class="field">
+        <label for="symptomInput" id="t-lbl-symp">Describe your symptoms in detail</label>
+        <textarea id="symptomInput" placeholder=""></textarea>
+      </div>
+
+      <button class="btn" id="t-btn-symp" onclick="checkSymptoms()">Analyze Symptoms & Find Doctors</button>
+
+      <div id="symptomResultContainer" style="display:none; margin-top: 20px;">
+        <h3 style="font-size: 1.1rem; color: var(--pine-deep); margin-bottom: 4px;">Available Doctors & Hospitals</h3>
+        <div class="symp-cards-list" id="sympCardsList"></div>
+      </div>
+
+      <p class="disclaimer" id="t-sympDisc">Keyword-based recommendation, not a formal medical diagnosis.</p>
+    </section>
+
+    <section class="section" id="section-hospital">
+      <div class="eyebrow-line">
+        <span class="num">04</span>
+        <h2 class="section-title" id="t-hospTitle">Find Hospitals Nearby</h2>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="hospSearch" placeholder="Search locality or category..." style="flex:1;" onkeyup="renderHospitals()">
+      </div>
+
+      <p id="hospitalSearchLine" style="color:var(--ink-soft); font-size:0.85rem; margin-bottom: 12px;"></p>
+
+      <div class="hospital-list" id="hospitalContainer">
+        <div class="empty-state">No hospital records available in the network.</div>
+      </div>
+      <p class="disclaimer" id="t-hospDisc">Displaying network facilities.</p>
+    </section>
+
+    <section class="section" id="section-medicines">
+      <div class="eyebrow-line">
+        <span class="num">05</span>
+        <h2 class="section-title" id="t-medsTitle">Medicines & Pharmacy</h2>
+      </div>
+      <div class="field">
+        <label for="medSearch">Search Prescribed Medicines</label>
+        <input type="text" id="medSearch" placeholder="e.g., Paracetamol, Amoxicillin..." onkeyup="renderMedicines()">
+      </div>
+      <div class="medicine-list" id="medicinesContainer">
+        <div class="empty-state">Loading medicines list...</div>
+      </div>
+    </section>
+
+    <section class="section" id="section-details">
+      <div class="eyebrow-line">
+        <span class="num" id="t-dtlsNum">Summary</span>
+        <h2 class="section-title" id="t-dtlsTitle">Active Medical Record</h2>
+      </div>
+
+      <div class="details-grid">
+        <div class="k" id="t-dk-name">Name</div><div class="v" id="dName">—</div>
+        <div class="k" id="t-dk-age">Age</div><div class="v" id="dAge">—</div>
+        <div class="k" id="t-dk-gender">Gender</div><div class="v" id="dGender">—</div>
+        <div class="k" id="t-dk-blood">Blood Group</div><div class="v" id="dBlood">—</div>
+        <div class="k" id="t-dk-house">House Number</div><div class="v" id="dHouse">—</div>
+        <div class="k" id="t-dk-address">Locality / Address</div><div class="v" id="dAddress">—</div>
+        <div class="k" id="t-dk-history">Medical History</div><div class="v" id="dHistory">—</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBhyY4fFIBx-TCe2pnuHpx2l66hChnpAl4",
+    projectId: "smartmedicure-8b4a9",
+    authDomain: "smartmedicure-8b4a9.firebaseapp.com",
+    storageBucket: "smartmedicure-8b4a9.appspot.com",
+    messagingSenderId: "404625862786",
+    appId: "1:404625862786:web:3bfda190324f819daec49b"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let accounts = {};
+  let activeAccountId = null;
+  let currentLang = 'en';
+  let pendingBooking = null;
+
+  let adminHospitals = [];
+  let adminDoctors = [];
+  let adminMedicines = [];
+
+  // Real-time synchronization listeners with Firestore
+  function initRealtimeListeners() {
+    // 1. Sync Hospitals Collection
+    db.collection('hospitals').onSnapshot((snapshot) => {
+      adminHospitals = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        adminHospitals.push({
+          id: doc.id,
+          name: data.name || 'Hospital Facility',
+          area: data.area || 'City Area',
+          address: data.address || 'Network Address',
+          status: 'Active',
+          specialists: data.specialists || []
+        });
+      });
+
+      const activeTab = document.querySelector('nav button.active')?.getAttribute('data-target');
+      if (activeTab === 'hospital') renderHospitals();
+      suggestDoctorsForAppointment();
+    }, (error) => {
+      console.error("Error syncing hospitals:", error);
+    });
+
+    // 2. Sync Doctors Subcollection Across All Hospitals
+    db.collectionGroup('doctors').onSnapshot((snapshot) => {
+      adminDoctors = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const hospId = doc.ref.parent.parent ? doc.ref.parent.parent.id : null;
+        const parentHosp = adminHospitals.find(h => h.id === hospId);
+
+        adminDoctors.push({
+          id: doc.id,
+          name: data.name ? (data.name.startsWith('Dr.') ? data.name : `Dr. ${data.name}`) : 'Unnamed Doctor',
+          spec: data.specialization || 'General Practitioner',
+          keywords: Array.isArray(data.symptoms) ? data.symptoms : (data.symptoms ? [data.symptoms] : []),
+          availableHours: Array.isArray(data.timeSlots) ? data.timeSlots : [],
+          timingStr: Array.isArray(data.timeSlots) ? data.timeSlots.join(', ') : 'No slots listed',
+          hospitalId: hospId,
+          hospital: parentHosp ? parentHosp.name : (data.hospital || 'Network Facility'),
+          address: parentHosp ? parentHosp.address : (data.address || 'Hospital Facility')
+        });
+      });
+
+      suggestDoctorsForAppointment();
+      const activeTab = document.querySelector('nav button.active')?.getAttribute('data-target');
+      if (activeTab === 'symptoms') checkSymptoms();
+    }, (error) => {
+      console.error("Error syncing doctors:", error);
+    });
+
+    // 3. Sync Medicines Subcollection Across All Hospitals
+    db.collectionGroup('medicines').onSnapshot((snapshot) => {
+      adminMedicines = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const hospId = doc.ref.parent.parent ? doc.ref.parent.parent.id : null;
+        const parentHosp = adminHospitals.find(h => h.id === hospId);
+
+        adminMedicines.push({
+          id: doc.id,
+          name: data.name || 'Unnamed Medicine',
+          category: data.category || 'General',
+          quantity: data.quantity || 0,
+          price: data.price || 0,
+          hospital: parentHosp ? parentHosp.name : 'Network Hospital'
+        });
+      });
+
+      renderMedicines();
+    }, (error) => {
+      console.error("Error syncing medicines:", error);
+    });
+  }
+
+  const translations = {
+    en: {
+      tag: "Personal health companion",
+      accLabel: "Active Account / खाता",
+      langLabel: "Language / भाषा",
+      navReg: "Registration",
+      navAppt: "Book Appointment",
+      navConsult: "Attend Consultations",
+      navSymp: "Symptom Checker",
+      navHosp: "Find Hospitals",
+      navMeds: "Medicines",
+      navDtls: "My Details",
+      logout: "Logout",
+      foot: "Not a substitute for professional medical care.",
+      regNum: "Welcome",
+      regTitle: "Patient Registration",
+      lblName: "Full name",
+      lblAge: "Age",
+      lblGender: "Gender",
+      lblBlood: "Blood Group (Optional)",
+      lblHouse: "House / Flat Number",
+      lblAddress: "Present Locality / Area",
+      lblHistory: "Medical history (Optional)",
+      btnReg: "Save Profile",
+      apptTitle: "Book an Appointment",
+      lblApptCat: "Select Specialization / Category",
+      lblDate: "Preferred Date",
+      lblHour: "Preferred Time Slot",
+      btnAppt: "Show Results",
+      apptResHead: "Appointment Status",
+      consultTitle: "Attend Consultations",
+      consultRoomHeader: "Join Live Teleconsultation Room",
+      consultRoomDesc: "Enter your Appointment or Consultation ID provided by the hospital to join your live video or audio session.",
+      lblConsultId: "Consultation / Appointment ID",
+      btnStartVideo: "📹 Join Video Consultation",
+      btnStartAudio: "📞 Audio Call Only",
+      consultScreenTitle: "Live Call Screen",
+      consultPlaceholder: "Enter your Consultation ID above to join the call.",
+      sympTitle: "Symptom Checker",
+      lblSymp: "Describe your symptoms in detail",
+      btnSymp: "Analyze Symptoms & Find Doctors",
+      sympDisc: "Keyword-based recommendation, not a formal medical diagnosis.",
+      hospTitle: "Find Hospitals Nearby",
+      hospDisc: "Displaying network facilities.",
+      medsTitle: "Medicines & Pharmacy",
+      dtlsNum: "Summary",
+      dtlsTitle: "Active Medical Record",
+      dkName: "Name",
+      dkAge: "Age",
+      dkGender: "Gender",
+      dkBlood: "Blood Group",
+      dkHouse: "House Number",
+      dkAddress: "Locality / Address",
+      dkHistory: "Medical History"
+    },
+    hi: {
+      tag: "व्यक्तिगत स्वास्थ्य साथी",
+      accLabel: "सक्रिय खाता / Account",
+      langLabel: "भाषा / Language",
+      navReg: "पंजीकरण",
+      navAppt: "अपॉइंटमेंट बुक करें",
+      navConsult: "परामर्श में भाग लें",
+      navSymp: "लक्षण जांचक",
+      navHosp: "निकटतम अस्पताल",
+      navMeds: "दवाएं (Medicines)",
+      navDtls: "मेरा विवरण",
+      logout: "लॉग आउट",
+      foot: "पेशेवर चिकित्सा देखभाल का विकल्प नहीं है।",
+      regNum: "स्वागत है",
+      regTitle: "रोगी पंजीकरण",
+      lblName: "पूरा नाम",
+      lblAge: "आयु",
+      lblGender: "लिंग",
+      lblBlood: "रक्त समूह (वैकल्पिक)",
+      lblHouse: "मकान नंबर",
+      lblAddress: "वर्तमान इलाका / क्षेत्र",
+      lblHistory: "चिकित्सा इतिहास (वैकल्पिक)",
+      btnReg: "प्रोफ़ाइल सहेजें",
+      apptTitle: "अपॉइंटमेंट बुक करें",
+      lblApptCat: "विशेषज्ञता / श्रेणी चुनें",
+      lblDate: "पसंदीदा तिथि",
+      lblHour: "पसंदीदा समय",
+      btnAppt: "परिणाम दिखाएं (Show Results)",
+      apptResHead: "अपॉइंटमेंट की स्थिति",
+      consultTitle: "ऑनलाइन परामर्श",
+      consultRoomHeader: "लाइव टेलीकंसल्टेशन रूम में शामिल हों",
+      consultRoomDesc: "अपने लाइव वीडियो या ऑडियो सत्र में शामिल होने के लिए अस्पताल द्वारा प्रदान की गई परामर्श आईडी दर्ज करें।",
+      lblConsultId: "परामर्श / अपॉइंटमेंट आईडी",
+      btnStartVideo: "📹 वीडियो परामर्श में शामिल हों",
+      btnStartAudio: "📞 केवल ऑडियो कॉल",
+      consultScreenTitle: "लाइव कॉल स्क्रीन",
+      consultPlaceholder: "कॉल में शामिल होने के लिए ऊपर अपनी परामर्श आईडी दर्ज करें।",
+      sympTitle: "लक्षण जांचक",
+      lblSymp: "अपने लक्षणों का विवरण दें",
+      btnSymp: "विश्लेषण करें और डॉक्टर खोजें",
+      sympDisc: "कीवर्ड-आधारित सुझाव, आधिकारिक निदान नहीं।",
+      hospTitle: "निकटतम अस्पताल खोजें",
+      hospDisc: "नेटवर्क अस्पताल।",
+      medsTitle: "दवाएं और फार्मेसी",
+      dtlsNum: "सारांश",
+      dtlsTitle: "सक्रिय चिकित्सा रिकॉर्ड",
+      dkName: "नाम",
+      dkAge: "आयु",
+      dkGender: "लिंग",
+      dkBlood: "रक्त समूह",
+      dkHouse: "मकान नंबर",
+      dkAddress: "पता",
+      dkHistory: "चिकित्सा इतिहास"
+    },
+    te: {
+      tag: "వ్యక్తిగత ఆరోగ్య భాగస్వామి",
+      accLabel: "సక్రియ ఖాతా / Account",
+      langLabel: "భాష / Language",
+      navReg: "నమోదు (Registration)",
+      navAppt: "అపాయింట్‌మెంట్ బుక్ చేయండి",
+      navConsult: "సలహాలు పొందండి (Attend Consultations)",
+      navSymp: "లక్షణాల తనిఖీ (Symptom Checker)",
+      navHosp: "సమీప ఆసుపత్రులు",
+      navMeds: "మందులు (Medicines)",
+      navDtls: "నా వివరాలు",
+      logout: "లాగ్ అవుట్",
+      foot: "ఇది వృత్తిపరమైన వైద్య సంరక్షణకు ప్రత్యామ్నాయం కాదు.",
+      regNum: "స్వాగతం",
+      regTitle: "రోగి నమోదు",
+      lblName: "పూర్తి పేరు",
+      lblAge: "వయస్సు",
+      lblGender: "లింగం",
+      lblBlood: "రక్త గ్రూపు (ఐచ్ఛికం)",
+      lblHouse: "ఇంటి నంబరు",
+      lblAddress: "ప్రస్తుత ప్రాంతం / చిరునామా",
+      lblHistory: "వైద్య చరిత్ర (ఐచ్ఛికం)",
+      btnReg: "ప్రొఫైల్ సేవ్ చేయండి",
+      apptTitle: "అపాయింట్‌మెంట్ బుక్ చేయండి",
+      lblApptCat: "విభాగం / కేటగిరీని ఎంచుకోండి",
+      lblDate: "తేదీ",
+      lblHour: "సమయం",
+      btnAppt: "ఫలితాలు చూడండి",
+      apptResHead: "అపాయింట్‌మెంట్ స్థితి",
+      consultTitle: "ఆన్‌లైన్ సంప్రదింపులు",
+      consultRoomHeader: "లైవ్ టెలీకన్సల్టేషన్ రూమ్‌లో చేరండి",
+      consultRoomDesc: "మీ లైవ్ వీడియో లేదా ఆడియో కాల్‌లోకి చేరడానికి హాస్పిటల్ ఇచ్చిన అపాయింట్‌మెంట్ ఐడీని నమోదు చేయండి.",
+      lblConsultId: "కన్సల్టేషన్ / అపాయింట్‌మెంట్ ఐడీ",
+      btnStartVideo: "📹 వీడియో కాల్‌లో చేరండి",
+      btnStartAudio: "📞 ఆడియో కాల్ మాత్రమే",
+      consultScreenTitle: "లైవ్ కాల్ స్క్రీన్",
+      consultPlaceholder: "కాల్‌లో చేరడానికి పైన మీ ఐడీని నమోదు చేయండి.",
+      sympTitle: "లక్షణాల తనిఖీ",
+      lblSymp: "మీ లక్షణాలను వివరించండి",
+      btnSymp: "లక్షణాలను విశ్లేషించి డాక్టర్‌ను కనుగొనండి",
+      sympDisc: "కీవర్డ్ ఆధారిత సూచన, అధికారిక వైద్య నిర్ధారణ కాదు.",
+      hospTitle: "సమీప ఆసుపత్రులను కనుగొనండి",
+      hospDisc: "నెట్‌వర్క్ ఆసుపత్రుల వివరాలు.",
+      medsTitle: "మందులు మరియు ఫార్మసీ",
+      dtlsNum: "సారాంశం",
+      dtlsTitle: "వైద్య రికార్డు",
+      dkName: "పేరు",
+      dkAge: "వయస్సు",
+      dkGender: "లింగం",
+      dkBlood: "రక్త గ్రూపు",
+      dkHouse: "ఇంటి నంబరు",
+      dkAddress: "చిరునామా",
+      dkHistory: "వైద్య చరిత్ర"
+    }
+  };
+
+  function selectInitialLang(lang) {
+    currentLang = lang;
+    document.getElementById('langSelect').value = lang;
+    document.getElementById('langModal').style.display = 'none';
+    applyTranslations();
+  }
+
+  function changeLanguage(lang) {
+    currentLang = lang;
+    applyTranslations();
+  }
+
+  function applyTranslations() {
+    const t = translations[currentLang] || translations.en;
+    document.getElementById('t-tag').innerText = t.tag;
+    document.getElementById('t-accLabel').innerText = t.accLabel;
+    document.getElementById('t-langLabel').innerText = t.langLabel;
+    document.getElementById('nav-reg').innerText = t.navReg;
+    document.getElementById('nav-appt').innerText = t.navAppt;
+    const consultNav = document.getElementById('nav-consult');
+    if (consultNav) consultNav.innerText = t.navConsult || "Attend Consultations";
+    document.getElementById('nav-symp').innerText = t.navSymp;
+    document.getElementById('nav-hosp').innerText = t.navHosp;
+    const medNav = document.getElementById('nav-meds');
+    if (medNav) medNav.innerText = t.navMeds || "Medicines";
+    document.getElementById('nav-dtls').innerText = t.navDtls;
+    document.getElementById('logoutBtn').innerText = t.logout;
+    document.getElementById('t-foot').innerText = t.foot;
+
+    document.getElementById('t-regNum').innerText = t.regNum;
+    document.getElementById('t-regTitle').innerText = t.regTitle;
+    document.getElementById('t-lbl-name').innerText = t.lblName;
+    document.getElementById('t-lbl-age').innerText = t.lblAge;
+    document.getElementById('t-lbl-gender').innerText = t.lblGender;
+    document.getElementById('t-lbl-blood').innerText = t.lblBlood;
+    document.getElementById('t-lbl-house').innerText = t.lblHouse;
+    document.getElementById('t-lbl-address').innerText = t.lblAddress;
+    document.getElementById('t-lbl-history').innerText = t.lblHistory;
+    document.getElementById('t-btn-reg').innerText = t.btnReg;
+
+    document.getElementById('t-apptTitle').innerText = t.apptTitle;
+    document.getElementById('t-lbl-apptcat').innerText = t.lblApptCat;
+    document.getElementById('t-lbl-date').innerText = t.lblDate;
+    document.getElementById('t-lbl-hour').innerText = t.lblHour;
+    document.getElementById('t-btn-appt').innerText = t.btnAppt;
+    document.getElementById('t-apptResHead').innerText = t.apptResHead;
+
+    const consultTitle = document.getElementById('t-consultTitle');
+    if (consultTitle) consultTitle.innerText = t.consultTitle || "Attend Consultations";
+    const consultRoomHeader = document.getElementById('t-consultRoomHeader');
+    if (consultRoomHeader) consultRoomHeader.innerText = t.consultRoomHeader || "Join Live Teleconsultation Room";
+    const consultRoomDesc = document.getElementById('t-consultRoomDesc');
+    if (consultRoomDesc) consultRoomDesc.innerText = t.consultRoomDesc || "Enter your Appointment or Consultation ID provided by the hospital to join your live video or audio session.";
+    const lblConsultId = document.getElementById('t-lbl-consultId');
+    if (lblConsultId) lblConsultId.innerText = t.lblConsultId || "Consultation / Appointment ID";
+    const btnStartVideo = document.getElementById('t-btn-startVideo');
+    if (btnStartVideo) btnStartVideo.innerText = t.btnStartVideo || "📹 Join Video Consultation";
+    const btnStartAudio = document.getElementById('t-btn-startAudio');
+    if (btnStartAudio) btnStartAudio.innerText = t.btnStartAudio || "📞 Audio Call Only";
+    const consultScreenTitle = document.getElementById('t-consultScreenTitle');
+    if (consultScreenTitle) consultScreenTitle.innerText = t.consultScreenTitle || "Live Call Screen";
+    const consultPlaceholder = document.getElementById('t-consultPlaceholder');
+    if (consultPlaceholder) consultPlaceholder.innerText = t.consultPlaceholder || "Enter your Consultation ID above to join the call.";
+
+    document.getElementById('t-sympTitle').innerText = t.sympTitle;
+    document.getElementById('t-lbl-symp').innerText = t.lblSymp;
+    document.getElementById('t-btn-symp').innerText = t.btnSymp;
+    document.getElementById('t-sympDisc').innerText = t.sympDisc;
+
+    document.getElementById('t-hospTitle').innerText = t.hospTitle;
+    document.getElementById('t-hospDisc').innerText = t.hospDisc;
+
+    const medTitle = document.getElementById('t-medsTitle');
+    if (medTitle) medTitle.innerText = t.medsTitle || "Medicines & Pharmacy";
+
+    document.getElementById('t-dtlsNum').innerText = t.dtlsNum;
+    document.getElementById('t-dtlsTitle').innerText = t.dtlsTitle;
+    document.getElementById('t-dk-name').innerText = t.dkName;
+    document.getElementById('t-dk-age').innerText = t.dkAge;
+    document.getElementById('t-dk-gender').innerText = t.dkGender;
+    document.getElementById('t-dk-blood').innerText = t.dkBlood;
+    document.getElementById('t-dk-house').innerText = t.dkHouse;
+    document.getElementById('t-dk-address').innerText = t.dkAddress;
+    document.getElementById('t-dk-history').innerText = t.dkHistory;
+  }
+
+  // Navigation Logic
+  document.querySelectorAll('nav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-target');
+      document.getElementById('section-' + target).classList.add('active');
+
+      if (target === 'hospital') renderHospitals();
+      if (target === 'appointment') suggestDoctorsForAppointment();
+      if (target === 'medicines') renderMedicines();
+    });
+  });
+
+  function registerPatient() {
+    const name = document.getElementById('regName').value.trim();
+    const age = document.getElementById('regAge').value.trim();
+    const gender = document.getElementById('regGender').value;
+    const blood = document.getElementById('regBlood').value || 'Not Specified';
+    const house = document.getElementById('regHouse').value.trim() || 'N/A';
+    const address = document.getElementById('regAddress').value.trim() || 'General Location';
+    const history = document.getElementById('regHistory').value.trim() || 'None reported';
+
+    if (!name || !age || !gender) {
+      document.getElementById('regError').style.display = 'block';
+      return;
+    }
+    document.getElementById('regError').style.display = 'none';
+
+    const id = 'p_' + Date.now();
+    accounts[id] = { id, name, age, gender, blood, house, address, history };
+    activeAccountId = id;
+
+    updateAccountDropdown();
+    setActivePatientUI();
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('apptDate').value = tomorrow.toISOString().split('T')[0];
+
+    document.querySelector('button[data-target="appointment"]').click();
+  }
+
+  function updateAccountDropdown() {
+    const sel = document.getElementById('accountSelect');
+    sel.innerHTML = '<option value="new">+ Add New Patient</option>';
+    for (let id in accounts) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.innerText = accounts[id].name;
+      if (id === activeAccountId) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  function switchAccount(val) {
+    if (val === 'new') {
+      activeAccountId = null;
+      document.getElementById('patientCard').classList.remove('visible');
+      document.getElementById('logoutBtn').classList.remove('visible');
+      disableNav(true);
+      document.getElementById('regName').value = '';
+      document.getElementById('regAge').value = '';
+      document.getElementById('regGender').value = '';
+      document.getElementById('regBlood').value = '';
+      document.getElementById('regHouse').value = '';
+      document.getElementById('regAddress').value = '';
+      document.getElementById('regHistory').value = '';
+      document.querySelector('button[data-target="register"]').click();
+    } else {
+      activeAccountId = val;
+      setActivePatientUI();
+    }
+  }
+
+  function setActivePatientUI() {
+    const p = accounts[activeAccountId];
+    if (!p) return;
+
+    document.getElementById('pcName').innerText = p.name;
+    document.getElementById('pcAge').innerText = 'Age: ' + p.age + ' (' + p.gender + ')';
+    document.getElementById('pcBlood').innerText = 'Blood Group: ' + p.blood;
+    document.getElementById('patientCard').classList.add('visible');
+    document.getElementById('logoutBtn').classList.add('visible');
+
+    document.getElementById('dName').innerText = p.name;
+    document.getElementById('dAge').innerText = p.age;
+    document.getElementById('dGender').innerText = p.gender;
+    document.getElementById('dBlood').innerText = p.blood;
+    document.getElementById('dHouse').innerText = p.house;
+    document.getElementById('dAddress').innerText = p.address;
+    document.getElementById('dHistory').innerText = p.history;
+
+    disableNav(false);
+  }
+
+  function disableNav(disable) {
+    document.querySelectorAll('nav button').forEach(b => {
+      if (b.getAttribute('data-target') !== 'register') {
+        b.disabled = disable;
+      }
+    });
+  }
+
+  function logoutPatient() {
+    switchAccount('new');
+  }
+
+  // Appointment Logic
+  function suggestDoctorsForAppointment() {
+    const category = document.getElementById('apptCategorySelect').value;
+    const select = document.getElementById('apptDocSelect');
+    select.innerHTML = '';
+
+    let matches = adminDoctors;
+    if (category && category !== 'all') {
+      matches = adminDoctors.filter(d => d.spec && d.spec.toLowerCase().includes(category.toLowerCase()));
+    }
+
+    if (matches.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.innerText = 'No doctors available';
+      select.appendChild(opt);
+    } else {
+      matches.forEach(doc => {
+        const hosp = adminHospitals.find(h => h.id === doc.hospitalId) || { name: doc.hospital || 'Facility' };
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.innerText = `${doc.name} (${doc.spec}) - ${hosp.name}`;
+        select.appendChild(opt);
+      });
+    }
+
+    updateApptDocInfo();
+  }
+
+  function updateApptDocInfo() {
+    const docId = document.getElementById('apptDocSelect').value;
+    const doc = adminDoctors.find(d => d.id === docId);
+    const info = document.getElementById('apptDocInfo');
+    if (doc) {
+      const hosp = adminHospitals.find(h => h.id === doc.hospitalId) || { address: doc.address || 'N/A' };
+      info.innerText = `Available Slots: ${doc.timingStr || 'Scheduled Hours'} | Facility: ${doc.hospital || hosp.name || 'Medical Center'}`;
+    } else {
+      info.innerText = '';
+    }
+  }
+
+  function initiateBooking() {
+    const docId = document.getElementById('apptDocSelect').value;
+    const doc = adminDoctors.find(d => d.id === docId);
+    const date = document.getElementById('apptDate').value;
+    const hour = document.getElementById('apptHour').value;
+    const type = document.getElementById('apptType').value;
+
+    if (!doc) {
+      alert('No doctor selected or available.');
+      return;
+    }
+
+    if (!date) {
+      alert('Please select a preferred date.');
+      return;
+    }
+
+    const hosp = adminHospitals.find(h => h.id === doc.hospitalId) || { name: doc.hospital || 'Hospital', address: doc.address || 'N/A' };
+    pendingBooking = { doc, hosp, date, hour, type };
+
+    document.getElementById('cDoc').innerHTML = `<strong>Doctor:</strong> ${doc.name} (${doc.spec})`;
+    document.getElementById('cHosp').innerHTML = `<strong>Hospital:</strong> ${hosp.name || doc.hospital}`;
+    document.getElementById('cAddr').innerHTML = `<strong>Address:</strong> ${doc.address || hosp.address}`;
+    document.getElementById('cType').innerHTML = `<strong>Type:</strong> ${type}`;
+    document.getElementById('cTime').innerHTML = `<strong>Slot:</strong> ${date} at ${hour}`;
+    
+    document.getElementById('confirmModal').style.display = 'flex';
+  }
+
+  function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+  }
+
+  function finalizeBooking() {
+    closeConfirmModal();
+    if (!pendingBooking) return;
+
+    const { doc, hosp, date, hour, type } = pendingBooking;
+    const box = document.getElementById('apptResult');
+    box.style.display = 'block';
+
+    const isTimeMatch = doc.availableHours && doc.availableHours.includes(hour);
+
+    document.getElementById('apptDoctorText').innerText = `${doc.name} — ${doc.spec}`;
+    document.getElementById('apptHospitalText').innerText = `Hospital: ${hosp.name || doc.hospital}`;
+    document.getElementById('apptAddressText').innerText = `Address: ${doc.address || hosp.address}`;
+    document.getElementById('apptTypeText').innerText = `Mode: ${type}`;
+
+    if (isTimeMatch) {
+      box.className = 'result-box';
+      document.getElementById('apptResultText').innerHTML = `<span style="color:#2A5C3B;">✓ Confirmed slot for ${date} at ${hour}. Booking registered.</span>`;
+    } else {
+      box.className = 'result-box error';
+      document.getElementById('apptResultText').innerHTML = `<span style="color:#A33;">⚠ ${doc.name} is unavailable at ${hour}. Alternate slots: ${doc.timingStr || 'Standard Hours'}. Request forwarded to facility.</span>`;
+    }
+  }
+
+  // Patient Teleconsultation Function
+  function startPatientConsultation(type) {
+    const roomId = document.getElementById('patientConsultRoomId').value.trim();
+    if (!roomId) {
+      alert("Please enter a valid Appointment or Consultation ID.");
+      return;
+    }
+
+    const container = document.getElementById('patientConsultContainer');
+    const domain = "meet.jit.si";
+    const roomName = `smartmedicure_${roomId}`;
+
+    container.innerHTML = `
+      <iframe src="https://${domain}/${roomName}#config.startWithVideoMuted=${type === 'audio'}" 
+              style="width: 100%; height: 100%; border: none; border-radius: 6px;" 
+              allow="camera; microphone; display-capture; autoplay">
+      </iframe>
+    `;
+  }
+
+  // Symptom Checker Logic
+  function checkSymptoms() {
+    const query = document.getElementById('symptomInput').value.toLowerCase().trim();
+    const container = document.getElementById('symptomResultContainer');
+    const list = document.getElementById('sympCardsList');
+    list.innerHTML = '';
+
+    if (!query) {
+      alert('Please describe your symptoms.');
+      return;
+    }
+
+    const matches = adminDoctors.filter(d => d.keywords && d.keywords.some(k => query.includes(k.toLowerCase())));
+
+    if (matches.length === 0) {
+      list.innerHTML = '<div class="empty-state">No matching doctors found in the network.</div>';
+    } else {
+      matches.forEach(doc => {
+        const hosp = adminHospitals.find(h => h.id === doc.hospitalId) || { name: doc.hospital || 'Facility', area: doc.area || 'N/A', address: doc.address || 'N/A' };
+        const card = document.createElement('div');
+        card.style.background = 'var(--surface)';
+        card.style.border = '1px solid var(--line)';
+        card.style.borderRadius = '4px';
+        card.style.padding = '18px';
+        card.innerHTML = `
+          <span style="display:inline-block; background:var(--ochre-soft); color:var(--pine-deep); font-size:0.75rem; font-weight:600; padding:3px 8px; border-radius:12px; margin-bottom:6px;">${hosp.area || 'Facility'}</span>
+          <div style="font-family:'Fraunces', serif; font-size:1.15rem; margin-bottom:4px; color:var(--pine-deep);">${doc.name} (${doc.spec})</div>
+          <div style="color:var(--ink-soft); font-size:0.85rem; margin-bottom:8px;"><strong>Hospital:</strong> ${hosp.name} — ${hosp.address}</div>
+          <div style="font-size:0.85rem; color:var(--ink-soft);"><strong>Available Slots:</strong> ${doc.timingStr || 'Available daily'}</div>
+          <button class="btn" style="margin-top:10px; padding:6px 12px; font-size:0.8rem;" onclick="quickBookDoctor('${doc.id}')">Book with this Doctor</button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    container.style.display = 'block';
+  }
+
+  function quickBookDoctor(docId) {
+    document.querySelector('button[data-target="appointment"]').click();
+    document.getElementById('apptDocSelect').value = docId;
+    updateApptDocInfo();
+  }
+
+  // Find Hospitals Logic
+  function renderHospitals() {
+    const container = document.getElementById('hospitalContainer');
+    container.innerHTML = '';
+
+    const query = document.getElementById('hospSearch').value.toLowerCase().trim();
+    const p = activeAccountId ? accounts[activeAccountId] : null;
+    const userLoc = p ? p.address : 'your location';
+    document.getElementById('hospitalSearchLine').innerText = `Showing healthcare facilities around ${userLoc}:`;
+
+    let matches = adminHospitals;
+    if (query) {
+      matches = matches.filter(h => h.name.toLowerCase().includes(query) || h.area.toLowerCase().includes(query));
+    }
+
+    if (matches.length === 0) {
+      container.innerHTML = '<div class="empty-state">No hospital records available in the network.</div>';
+    } else {
+      matches.forEach(h => {
+        const card = document.createElement('div');
+        card.style.background = 'var(--surface)';
+        card.style.border = '1px solid var(--line)';
+        card.style.borderRadius = '4px';
+        card.style.padding = '18px';
+        card.innerHTML = `
+          <div style="font-family:'Fraunces', serif; font-size:1.15rem; color:var(--pine-deep); margin-bottom:4px;">${h.name}</div>
+          <div style="color:var(--ink-soft); font-size:0.88rem; margin-bottom:6px;">${h.area} — ${h.address}</div>
+          <div style="font-size:0.8rem; margin-bottom:8px;"><span style="background:var(--ochre-soft); color:var(--pine-deep); padding:2px 8px; border-radius:10px; font-weight:600;">${h.status}</span></div>
+          <div style="font-size:0.85rem; color:var(--ink-soft);"><strong>Specialists:</strong> ${(h.specialists && h.specialists.length) ? h.specialists.join(', ') : 'General Care'}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+  }
+
+  // Medicines Pharmacy Rendering Logic
+  function renderMedicines() {
+    const container = document.getElementById('medicinesContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const query = document.getElementById('medSearch')?.value.toLowerCase().trim() || '';
+
+    let matches = adminMedicines;
+    if (query) {
+      matches = matches.filter(m => m.name.toLowerCase().includes(query) || m.category.toLowerCase().includes(query));
+    }
+
+    if (matches.length === 0) {
+      container.innerHTML = '<div class="empty-state">No medicine inventory uploaded yet.</div>';
+    } else {
+      matches.forEach(m => {
+        const card = document.createElement('div');
+        card.style.background = 'var(--surface)';
+        card.style.border = '1px solid var(--line)';
+        card.style.borderRadius = '4px';
+        card.style.padding = '18px';
+        card.innerHTML = `
+          <div style="font-family:'Fraunces', serif; font-size:1.15rem; color:var(--pine-deep); margin-bottom:4px;">${m.name}</div>
+          <div style="color:var(--ink-soft); font-size:0.88rem; margin-bottom:6px;"><strong>Category:</strong> ${m.category} | <strong>Hospital:</strong> ${m.hospital}</div>
+          <div style="font-size:0.85rem; color:var(--pine); font-weight:600;">Stock: ${m.quantity} available | Price: ₹${m.price}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+  }
+
+  // Initialize live Firestore connection on load
+  document.addEventListener('DOMContentLoaded', initRealtimeListeners);
+</script>
+</body>
+</html>

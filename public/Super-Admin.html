@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Medicure — Super Admin Console</title>
+
+<!-- Firebase SDKs (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #1B2B22; --ink-soft: #4A5A50; --paper: #EFEEE3; --surface: #FBFAF6;
+    --line: #D8D6C8; --pine: #3E6259; --pine-deep: #2A453E; --ochre: #C98A3E;
+    --danger: #A33;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: 'Work Sans', sans-serif; font-size: 15px; }
+  h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 600; margin: 0; color: var(--ink); }
+  
+  .app-container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; border-bottom: 2px solid var(--line); padding-bottom: 16px; }
+  
+  .layout-grid { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 24px; }
+  
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 0.82rem; color: var(--ink-soft); font-weight: 500; }
+  .field input { font-family: inherit; font-size: 0.92rem; padding: 9px 12px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+  
+  .btn { all: unset; cursor: pointer; display: inline-block; background: var(--pine); color: #F3F1E8; padding: 10px 18px; border-radius: 4px; font-size: 0.88rem; font-weight: 500; text-align: center; }
+  .btn:hover { background: var(--pine-deep); }
+  
+  .data-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .data-table th, .data-table td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+  .data-table th { background: var(--pine-deep); color: #EFEEE3; font-weight: 500; }
+  .data-table tr:last-child td { border-bottom: none; }
+  
+  .pill { display: inline-block; background: var(--ochre); color: #2A2110; border-radius: 12px; padding: 2px 10px; font-size: 0.78rem; font-weight: 600; }
+  .empty-msg { padding: 20px; text-align: center; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <header class="header">
+    <div>
+      <h1>Super-Admin Platform Console</h1>
+      <p style="font-size: 0.88rem; color: var(--ink-soft); margin-top: 4px;">System-wide hospital management & onboarding</p>
+    </div>
+    <div id="authStatus" style="font-size: 0.85rem; color: var(--ink-soft);">Checking session...</div>
+  </header>
+
+  <!-- Login Box -->
+  <div id="loginBox" class="card" style="max-width: 400px; margin: 0 auto 32px auto; display: none;">
+    <h3 style="margin-bottom: 14px; color: var(--pine-deep);">Super-Admin Sign In</h3>
+    <div class="field">
+      <label for="loginEmail">Email Address</label>
+      <input type="email" id="loginEmail" placeholder="owner@smartmedicure.com">
+    </div>
+    <div class="field">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+    <button class="btn" style="width: 100%; margin-top: 6px;" onclick="loginSuperAdmin()">Log In</button>
+  </div>
+
+  <!-- Main Console Workspace -->
+  <div id="adminWorkspace" class="layout-grid" style="display: none;">
+    <!-- Onboarding Form -->
+    <div class="card">
+      <h3 style="margin-bottom: 18px; color: var(--pine-deep);">Onboard New Hospital</h3>
+      
+      <div class="field">
+        <label for="hospName">Hospital Name</label>
+        <input type="text" id="hospName" placeholder="e.g., City General Hospital">
+      </div>
+      
+      <div class="field">
+        <label for="hospArea">Area / Location</label>
+        <input type="text" id="hospArea" placeholder="e.g., Downtown Branch">
+      </div>
+
+      <hr style="border: none; border-top: 1px solid var(--line); margin: 20px 0;">
+
+      <div class="field">
+        <label for="adminEmail">Primary Admin Email</label>
+        <input type="email" id="adminEmail" placeholder="admin@citygeneral.com">
+      </div>
+
+      <div class="field">
+        <label for="adminPass">Initial Password</label>
+        <input type="password" id="adminPass" placeholder="••••••••">
+      </div>
+
+      <button class="btn" style="width: 100%; margin-top: 8px;" onclick="createNewHospital()">Register Hospital & Admin</button>
+    </div>
+
+    <!-- Active Facilities Table -->
+    <div>
+      <h3 style="margin-bottom: 18px; color: var(--pine-deep);">Registered Facilities Overview</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Hospital Name</th>
+            <th>Location</th>
+            <th>Total Doctors</th>
+            <th>Hospital ID</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="hospitalTableBody">
+          <tr><td colspan="5" class="empty-msg">Loading facilities...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBhyY4fFIBx-TCe2pnuHpx2l66hChnpAl4",
+    projectId: "smartmedicure-8b4a9",
+    authDomain: "smartmedicure-8b4a9.firebaseapp.com",
+    storageBucket: "smartmedicure-8b4a9.appspot.com",
+    messagingSenderId: "404625862786",
+    appId: "1:404625862786:web:3bfda190324f819daec49b"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  // Monitor Auth State & Toggle Interface Visibility
+  auth.onAuthStateChanged(async (user) => {
+    const statusDiv = document.getElementById('authStatus');
+    const loginBox = document.getElementById('loginBox');
+    const adminWorkspace = document.getElementById('adminWorkspace');
+
+    if (user) {
+      try {
+        const adminDoc = await db.collection('admins').doc(user.uid).get();
+        if (adminDoc.exists && adminDoc.data().role === 'super_admin') {
+          statusDiv.innerHTML = `LoggedIn: <strong>${user.email}</strong> (Super-Admin) | <a href="#" onclick="auth.signOut()" style="color:var(--danger); text-decoration:none;">Log Out</a>`;
+          loginBox.style.display = 'none';
+          adminWorkspace.style.display = 'grid';
+          loadFacilitiesOverview();
+        } else {
+          alert("Access Restricted: Your account lacks 'super_admin' privileges.");
+          auth.signOut();
+        }
+      } catch (err) {
+        console.error("Auth check error:", err);
+        statusDiv.textContent = "Error checking privileges.";
+      }
+    } else {
+      statusDiv.textContent = "Not Logged In";
+      loginBox.style.display = 'block';
+      adminWorkspace.style.display = 'none';
+    }
+  });
+
+  // Handle Super-Admin Login
+  async function loginSuperAdmin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPass').value.trim();
+
+    if (!email || !password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Login Failed: " + err.message);
+    }
+  }
+
+  // Onboard New Hospital & Primary Admin
+  async function createNewHospital() {
+    const name = document.getElementById('hospName').value.trim();
+    const area = document.getElementById('hospArea').value.trim();
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPass').value.trim();
+
+    if (!name || !email || !password) {
+      alert("Please complete all required fields.");
+      return;
+    }
+
+    try {
+      // 1. Create Hospital Document via primary Super-Admin database instance
+      const hospitalRef = await db.collection('hospitals').add({
+        name: name,
+        area: area,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 2. Initialize secondary auth app to create user credentials
+      const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAuthApp");
+      const userCredential = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+      const newAdminUid = userCredential.user.uid;
+
+      // 3. Save Admin Document using primary Super-Admin db session
+      await db.collection('admins').doc(newAdminUid).set({
+        email: email,
+        hospitalId: hospitalRef.id,
+        role: "hospital_admin",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 4. Clean up secondary auth session
+      await secondaryApp.delete();
+
+      alert(`Successfully onboarded ${name}!`);
+      clearForm();
+      loadFacilitiesOverview();
+    } catch (err) {
+      console.error("Onboarding Error:", err);
+      alert("Failed to onboard hospital: " + err.message);
+    }
+  }
+
+  // Load Hospitals & Doctor Counts
+  async function loadFacilitiesOverview() {
+    const tbody = document.getElementById('hospitalTableBody');
+    tbody.innerHTML = '';
+
+    try {
+      const hospitalSnap = await db.collection('hospitals').get();
+      
+      if (hospitalSnap.empty) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No hospitals registered yet.</td></tr>';
+        return;
+      }
+
+      for (const doc of hospitalSnap.docs) {
+        const hospitalData = doc.data();
+        
+        // Fetch Subcollection Count for Doctors
+        const doctorsSnap = await db.collection('hospitals').doc(doc.id).collection('doctors').get();
+        const doctorCount = doctorsSnap.size;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${hospitalData.name || 'Unnamed Hospital'}</strong></td>
+          <td>${hospitalData.area || 'N/A'}</td>
+          <td><span class="pill">${doctorCount} Doctors</span></td>
+          <td><code style="font-size:0.78rem;">${doc.id}</code></td>
+          <td><button class="btn" style="background:var(--danger); font-size:0.75rem; padding:4px 10px;" onclick="deleteHospital('${doc.id}', '${(hospitalData.name || '').replace(/'/g, "\\'")}')">Remove</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    } catch (err) {
+      console.error("Error fetching overview data:", err);
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-msg" style="color:var(--danger);">Error loading data. Check security rules.</td></tr>';
+    }
+  }
+
+  async function deleteHospital(hospitalId, hospitalName) {
+    if (!confirm(`Are you sure you want to remove ${hospitalName || 'this hospital'}?`)) return;
+    try {
+      const doctorsSnap = await db.collection('hospitals').doc(hospitalId).collection('doctors').get();
+      const batch = db.batch();
+      doctorsSnap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
+      const adminsSnap = await db.collection('admins').where('hospitalId', '==', hospitalId).get();
+      const adminBatch = db.batch();
+      adminsSnap.forEach(doc => adminBatch.delete(doc.ref));
+      await adminBatch.commit();
+
+      await db.collection('hospitals').doc(hospitalId).delete();
+      alert('Hospital successfully removed.');
+      loadFacilitiesOverview();
+    } catch (err) {
+      console.error("Error deleting hospital:", err);
+      alert("Failed to remove hospital: " + err.message);
+    }
+  }
+
+  function clearForm() {
+    document.getElementById('hospName').value = '';
+    document.getElementById('hospArea').value = '';
+    document.getElementById('adminEmail').value = '';
+    document.getElementById('adminPass').value = '';
+  }
+</script>
+</body>
+</html>
